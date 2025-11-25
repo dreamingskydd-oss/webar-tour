@@ -1,180 +1,53 @@
-html<!DOCTYPE html>
-<html lang="zh-TW">
+<!DOCTYPE html>
+<html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>AR 導覽測試</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AR 測試</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-  
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-    
-    #loading {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      font-family: Arial, sans-serif;
-      z-index: 9999;
-    }
-    
-    #loading.hidden {
-      display: none;
-    }
-    
-    .spinner {
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top: 4px solid white;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    #hint {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 15px 30px;
-      border-radius: 25px;
-      font-size: 16px;
-      z-index: 100;
-      font-family: Arial, sans-serif;
-    }
-    
-    #hint.hidden {
-      display: none;
-    }
-  </style>
 </head>
-<body>
-
-  <!-- 載入畫面 -->
-  <div id="loading">
-    <div class="spinner"></div>
-    <h2>正在啟動 AR</h2>
-    <p>請允許相機權限</p>
+<body style="margin:0;">
+  
+  <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:15px 30px;border-radius:25px;z-index:100;">
+    📷 對準圖片
   </div>
 
-  <!-- 掃描提示 -->
-  <div id="hint">
-    📷 請將相機對準測試圖片
-  </div>
-
-  <!-- AR 場景 -->
   <a-scene
-    mindar-image="
-      imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/card.mind;//圖片節點
-      autoStart: true;
-      uiLoading: no;
-      uiScanning: no;
-      uiError: no;
-    "
-    color-space="sRGB"
-    renderer="colorManagement: true; physicallyCorrectLights: true;"
+    mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/card.mind; autoStart: true;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
 
-    <!-- 資源 -->
     <a-assets>
-      <video
-        id="demo-video"
+      <video id="v" 
         src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/video.mp4"
-        preload="auto"
-        loop="true"
-        crossorigin="anonymous"
-        webkit-playsinline
-        playsinline>
+        preload="auto" loop="true" 
+        crossorigin="anonymous" 
+        webkit-playsinline playsinline>
       </video>
     </a-assets>
 
-    <!-- 光源 -->
-    <a-light type="ambient" intensity="0.5"></a-light>
-    <a-light type="directional" intensity="0.5" position="1 1 1"></a-light>
+    <a-camera position="0 0 0"></a-camera>
 
-    <!-- AR 內容 -->
     <a-entity mindar-image-target="targetIndex: 0">
-      
-      <!-- 影片 -->
-      <a-video
-        src="#demo-video"
-        position="0 0 0"
-        height="0.552"
-        width="1"
-        rotation="0 0 0">
-      </a-video>
-
-      <!-- 標題 -->
-      <a-text
-        value="AR 測試成功！"
-        position="0 0.65 0"
-        align="center"
-        width="1.5"
-        color="#FFFFFF"
-        shader="flat">
-      </a-text>
-
+      <a-video src="#v" position="0 0 0" width="1" height="0.552"></a-video>
+      <a-text value="成功！" position="0 0.6 0" align="center" color="#FFF" width="1.5"></a-text>
     </a-entity>
-
-    <!-- 相機 -->
-    <a-entity camera></a-entity>
-
   </a-scene>
 
   <script>
-    const loading = document.getElementById('loading');
-    const hint = document.getElementById('hint');
-    const scene = document.querySelector('a-scene');
-    const video = document.querySelector('#demo-video');
-
-    // 場景載入完成
-    scene.addEventListener('renderstart', () => {
-      console.log('AR 場景已載入');
-      loading.classList.add('hidden');
-    });
-
-    // AR 控制
-    const target = document.querySelector('a-entity[mindar-image-target]');
+    const target = document.querySelector('[mindar-image-target]');
+    const video = document.querySelector('#v');
     
     target.addEventListener('targetFound', () => {
       console.log('找到標記！');
-      hint.classList.add('hidden');
-      video.play().catch(err => console.log('播放影片:', err));
+      video.play();
     });
-
+    
     target.addEventListener('targetLost', () => {
       console.log('標記遺失');
-      hint.classList.remove('hidden');
       video.pause();
     });
-
-    // 錯誤處理
-    window.addEventListener('error', (e) => {
-      console.error('錯誤:', e);
-      loading.innerHTML = '<h2>無法啟動 AR</h2><p>請檢查相機權限</p>';
-    });
   </script>
-
 </body>
 </html>
