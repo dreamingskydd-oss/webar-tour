@@ -1,11 +1,10 @@
-<!DOCTYPE html>
+html<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AR 導覽 - 測試點</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>AR 導覽測試</title>
   
-  <!-- 載入 A-Frame 和 MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   
@@ -13,10 +12,8 @@
     body {
       margin: 0;
       overflow: hidden;
-      font-family: Arial, sans-serif;
     }
     
-    /* 載入畫面 */
     #loading {
       position: fixed;
       top: 0;
@@ -29,7 +26,12 @@
       justify-content: center;
       align-items: center;
       color: white;
-      z-index: 1000;
+      font-family: Arial, sans-serif;
+      z-index: 9999;
+    }
+    
+    #loading.hidden {
+      display: none;
     }
     
     .spinner {
@@ -47,8 +49,7 @@
       100% { transform: rotate(360deg); }
     }
     
-    /* 掃描提示 */
-    #scan-hint {
+    #hint {
       position: fixed;
       bottom: 30px;
       left: 50%;
@@ -59,16 +60,11 @@
       border-radius: 25px;
       font-size: 16px;
       z-index: 100;
-      animation: pulse 2s infinite;
+      font-family: Arial, sans-serif;
     }
     
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-    
-    .hidden {
-      display: none !important;
+    #hint.hidden {
+      display: none;
     }
   </style>
 </head>
@@ -77,13 +73,13 @@
   <!-- 載入畫面 -->
   <div id="loading">
     <div class="spinner"></div>
-    <h2>正在啟動 AR 導覽...</h2>
-    <p>請允許使用相機</p>
+    <h2>正在啟動 AR</h2>
+    <p>請允許相機權限</p>
   </div>
 
   <!-- 掃描提示 -->
-  <div id="scan-hint">
-    📷 請將相機對準導覽標誌
+  <div id="hint">
+    📷 請將相機對準測試圖片
   </div>
 
   <!-- AR 場景 -->
@@ -92,19 +88,18 @@
       imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/card.mind;
       autoStart: true;
       uiLoading: no;
-      uiError: no;
       uiScanning: no;
+      uiError: no;
     "
     color-space="sRGB"
-    renderer="colorManagement: true, physicallyCorrectLights"
+    renderer="colorManagement: true; physicallyCorrectLights: true;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
 
-    <!-- 預載資源 -->
+    <!-- 資源 -->
     <a-assets>
-      <!-- 示範影片 (你要換成自己的) -->
       <video
-        id="tour-video"
+        id="demo-video"
         src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/video.mp4"
         preload="auto"
         loop="true"
@@ -114,16 +109,16 @@
       </video>
     </a-assets>
 
-    <!-- 環境光 -->
+    <!-- 光源 -->
     <a-light type="ambient" intensity="0.5"></a-light>
     <a-light type="directional" intensity="0.5" position="1 1 1"></a-light>
 
-    <!-- AR 內容：當掃描到圖片時出現 -->
-    <a-entity mindar-image-target="targetIndex: 0" ar-content>
+    <!-- AR 內容 -->
+    <a-entity mindar-image-target="targetIndex: 0">
       
       <!-- 影片 -->
       <a-video
-        src="#tour-video"
+        src="#demo-video"
         position="0 0 0"
         height="0.552"
         width="1"
@@ -132,30 +127,13 @@
 
       <!-- 標題 -->
       <a-text
-        value="歡迎來到景點名稱"
-        position="0 0.7 0"
+        value="AR 測試成功！"
+        position="0 0.65 0"
         align="center"
         width="1.5"
         color="#FFFFFF"
         shader="flat">
       </a-text>
-
-      <!-- 資訊按鈕 -->
-      <a-box
-        position="0 -0.7 0"
-        width="0.5"
-        height="0.15"
-        depth="0.01"
-        color="#4CAF50"
-        class="clickable">
-        <a-text
-          value="了解更多"
-          position="0 0 0.01"
-          align="center"
-          width="0.8"
-          color="#FFFFFF">
-        </a-text>
-      </a-box>
 
     </a-entity>
 
@@ -165,62 +143,36 @@
   </a-scene>
 
   <script>
-    // === 初始化邏輯 ===
-    
     const loading = document.getElementById('loading');
-    const scanHint = document.getElementById('scan-hint');
+    const hint = document.getElementById('hint');
     const scene = document.querySelector('a-scene');
-    
+    const video = document.querySelector('#demo-video');
+
     // 場景載入完成
     scene.addEventListener('renderstart', () => {
-      console.log('AR 已啟動');
+      console.log('AR 場景已載入');
       loading.classList.add('hidden');
     });
 
-    // === AR 內容控制 ===
+    // AR 控制
+    const target = document.querySelector('a-entity[mindar-image-target]');
     
-    AFRAME.registerComponent('ar-content', {
-      init: function() {
-        const video = document.querySelector('#tour-video');
-        const target = this.el;
-        
-        // 找到標記時
-        target.addEventListener('targetFound', () => {
-          console.log('✅ 標記已找到');
-          scanHint.classList.add('hidden');
-          video.play();
-        });
-        
-        // 失去標記時
-        target.addEventListener('targetLost', () => {
-          console.log('❌ 標記遺失');
-          scanHint.classList.remove('hidden');
-          video.pause();
-        });
-      }
+    target.addEventListener('targetFound', () => {
+      console.log('找到標記！');
+      hint.classList.add('hidden');
+      video.play().catch(err => console.log('播放影片:', err));
     });
 
-    // === 點擊互動 ===
-    
-    document.querySelector('.clickable').addEventListener('click', () => {
-      alert('這裡可以跳轉到更多資訊！');
-      // 實際使用時改成：
-      // window.open('https://your-site.com/detail', '_blank');
+    target.addEventListener('targetLost', () => {
+      console.log('標記遺失');
+      hint.classList.remove('hidden');
+      video.pause();
     });
 
-    // === 錯誤處理 ===
-    
+    // 錯誤處理
     window.addEventListener('error', (e) => {
-      console.error('發生錯誤:', e);
-      loading.innerHTML = `
-        <h2>😞 無法啟動 AR</h2>
-        <p>請檢查：</p>
-        <ul style="text-align:left">
-          <li>是否允許相機權限</li>
-          <li>是否使用支援的瀏覽器（Safari/Chrome）</li>
-          <li>網路連線是否正常</li>
-        </ul>
-      `;
+      console.error('錯誤:', e);
+      loading.innerHTML = '<h2>無法啟動 AR</h2><p>請檢查相機權限</p>';
     });
   </script>
 
