@@ -9,7 +9,7 @@
 </head>
 <body style="margin:0;">
   
-  <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:15px 30px;border-radius:25px;z-index:100;">
+  <div id="hint" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:15px 30px;border-radius:25px;z-index:100;">
     📷 對準圖片
   </div>
 
@@ -19,33 +19,65 @@
     device-orientation-permission-ui="enabled: false">
 
     <a-assets>
-      <video id="v" 
-        src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/video.mp4"
-        preload="auto" loop="true" 
-        crossorigin="anonymous" 
-        webkit-playsinline playsinline>
+      <!-- 使用不同的影片來源 -->
+      <video 
+        id="vid"
+        src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        preload="auto"
+        loop="true"
+        muted="true"
+        crossorigin="anonymous"
+        playsinline
+        webkit-playsinline>
       </video>
     </a-assets>
 
     <a-camera position="0 0 0"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <a-video src="#v" position="0 0 0" width="1" height="0.552"></a-video>
-      <a-text value="成功！" position="0 0.6 0" align="center" color="#FFF" width="1.5"></a-text>
+      
+      <a-video 
+        src="#vid" 
+        position="0 0 0" 
+        width="1" 
+        height="0.552"
+        play-on-found>
+      </a-video>
+
+      <a-text 
+        value="看到影片了嗎？" 
+        position="0 0.7 0" 
+        align="center" 
+        color="#FFFF00" 
+        width="1.5">
+      </a-text>
+
     </a-entity>
   </a-scene>
 
   <script>
+    const hint = document.getElementById('hint');
     const target = document.querySelector('[mindar-image-target]');
-    const video = document.querySelector('#v');
+    const video = document.querySelector('#vid');
     
     target.addEventListener('targetFound', () => {
       console.log('找到標記！');
-      video.play();
+      hint.style.display = 'none';
+      
+      // 強制播放影片
+      video.muted = true; // 確保靜音
+      video.play().then(() => {
+        console.log('影片播放成功');
+      }).catch(err => {
+        console.error('影片播放失敗:', err);
+        // 如果失敗，改顯示文字
+        alert('影片無法播放，但 AR 追蹤正常！');
+      });
     });
     
     target.addEventListener('targetLost', () => {
       console.log('標記遺失');
+      hint.style.display = 'block';
       video.pause();
     });
   </script>
