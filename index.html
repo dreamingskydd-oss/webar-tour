@@ -2,9 +2,12 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>AR 導覽 - Android 優化版</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AR 導覽 - 完整註解版</title>
   
+  <!-- ========================================
+       必要的 WebAR 函式庫
+       ======================================== -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   
@@ -14,6 +17,7 @@
       overflow: hidden;
     }
     
+    /* 提示訊息樣式 */
     #hint {
       position: fixed;
       bottom: 20px;
@@ -28,125 +32,85 @@
       font-size: 16px;
     }
     
-    #controls {
+    /* 載入畫面樣式 */
+    #loading {
       position: fixed;
-      top: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.85);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.9);
       color: white;
-      padding: 15px;
-      border-radius: 10px;
-      font-family: Arial;
-      font-size: 14px;
-      z-index: 200;
-      max-width: 200px;
+      padding: 30px;
+      border-radius: 15px;
+      z-index: 1000;
+      text-align: center;
+    }
+    
+    #loading.hidden {
       display: none;
     }
     
-    #controls.visible {
-      display: block;
+    /* 載入動畫 */
+    .spinner {
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
     }
     
-    #controls button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      margin: 3px;
-      border-radius: 5px;
-      font-size: 14px;
-      cursor: pointer;
-      width: 45px;
-    }
-    
-    #controls button:active {
-      background: #45a049;
-      transform: scale(0.95);
-    }
-    
-    #toggle-btn {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 18px;
-      z-index: 201;
-      cursor: pointer;
-    }
-    
-    #info {
-      position: fixed;
-      bottom: 70px;
-      left: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 10px;
-      border-radius: 5px;
-      font-family: monospace;
-      font-size: 11px;
-      z-index: 100;
-      max-width: 200px;
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
   
-  <!-- 提示訊息 -->
+  <!-- ========================================
+       使用者介面元素
+       ======================================== -->
+  
+  <!-- 載入畫面 -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>正在載入 AR...</div>
+  </div>
+  
+  <!-- 掃描提示 -->
   <div id="hint">📷 對準導覽標誌</div>
-  
-  <!-- 調整按鈕 -->
-  <button id="toggle-btn">⚙️</button>
-  
-  <!-- 控制面板 -->
-  <div id="controls">
-    <div style="margin-bottom: 10px; font-weight: bold;">位置調整</div>
-    <div style="text-align: center;">
-      <button onclick="adjustPos('up')">⬆️</button>
-    </div>
-    <div style="text-align: center;">
-      <button onclick="adjustPos('left')">⬅️</button>
-      <button onclick="adjustPos('right')">➡️</button>
-    </div>
-    <div style="text-align: center;">
-      <button onclick="adjustPos('down')">⬇️</button>
-    </div>
-    <div style="margin: 10px 0; text-align: center;">
-      <button onclick="adjustPos('closer')" style="width: auto; padding: 8px 15px;">靠近</button>
-      <button onclick="adjustPos('farther')" style="width: auto; padding: 8px 15px;">遠離</button>
-    </div>
-    <hr style="border: 1px solid #555; margin: 10px 0;">
-    <div style="margin-bottom: 10px; font-weight: bold;">大小調整</div>
-    <div style="text-align: center;">
-      <button onclick="adjustScale('bigger')" style="width: auto; padding: 8px 15px;">放大</button>
-      <button onclick="adjustScale('smaller')" style="width: auto; padding: 8px 15px;">縮小</button>
-    </div>
-    <hr style="border: 1px solid #555; margin: 10px 0;">
-    <button onclick="resetPos()" style="width: 100%; background: #FF5722;">🔄 重置</button>
-    <button onclick="saveSettings()" style="width: 100%; background: #2196F3; margin-top: 5px;">💾 儲存</button>
-  </div>
-  
-  <!-- 除錯資訊 -->
-  <div id="info">
-    載入中...
-  </div>
 
-  <!-- AR 場景 -->
+  <!-- ========================================
+       AR 場景設定
+       ======================================== -->
   <a-scene
     mindar-image="
       imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/card.mind;
       autoStart: true;
-      filterMinCF: 0.0001;
-      filterBeta: 0.01;
     "
     vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
-    renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;">
+    device-orientation-permission-ui="enabled: false">
 
+    <!-- ========================================
+         📦 資源區：定義所有要使用的媒體檔案
+         
+         🔧 如何修改：
+         1. 修改 video 的 src 為你的影片網址
+         2. 可以加入多個 video 標籤
+         3. 可以加入 img, audio 等其他資源
+         ======================================== -->
     <a-assets>
+      <!-- 
+        📹 影片資源
+        🔧 修改這裡來更換播放的影片！
+        
+        src: 影片網址（可以是相對路徑或完整網址）
+        例如：
+        - 本地檔案: src="./videos/tour.mp4"
+        - 網路檔案: src="https://example.com/video.mp4"
+      -->
       <video 
         id="vid"
         src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
@@ -157,254 +121,395 @@
         playsinline
         webkit-playsinline>
       </video>
+      
+      <!-- 
+        🔧 如果要加入更多影片，複製上面的 video 標籤：
+        
+        <video 
+          id="vid2"
+          src="./videos/tour2.mp4"
+          preload="auto"
+          loop="true"
+          muted="true"
+          crossorigin="anonymous"
+          playsinline
+          webkit-playsinline>
+        </video>
+      -->
     </a-assets>
 
-    <a-camera 
-      position="0 0 0"
-      look-controls="enabled: false">
-    </a-camera>
+    <!-- 相機設定 -->
+    <a-camera position="0 0 0"></a-camera>
 
+    <!-- ========================================
+         🎯 AR 內容：當掃描到圖片時顯示的內容
+         
+         targetIndex: 對應追蹤圖片的編號
+         - 0 = 第一張圖片
+         - 1 = 第二張圖片
+         - 依此類推
+         ======================================== -->
     <a-entity mindar-image-target="targetIndex: 0">
       
-      <!-- AR 影片 -->
+      <!-- 
+        📹 影片元素
+        🔧 修改這些屬性來調整影片顯示：
+        
+        src: 指向 a-assets 中定義的影片 ID
+        position: 位置 (x y z)
+          - x: 左右 (負數=左, 正數=右)
+          - y: 上下 (負數=下, 正數=上)
+          - z: 前後 (負數=遠, 正數=近)
+        width: 寬度
+        height: 高度
+        rotation: 旋轉 (x y z 角度)
+      -->
       <a-video 
         id="ar-video"
-        src="#vid" 
-        position="0 0 0" 
-        width="1" 
+        src="#vid"
+        position="0 0 0"
+        width="1"
         height="0.552">
       </a-video>
 
-      <!-- 標題文字 -->
+      <!-- 
+        📝 文字標題
+        🔧 修改這些屬性來自訂文字：
+        
+        value: 顯示的文字內容
+        position: 位置
+        color: 顏色 (十六進位色碼或顏色名稱)
+        width: 文字寬度
+        align: 對齊方式 (left, center, right)
+      -->
       <a-text 
-        value="AR 測試" 
-        position="0 0.7 0.01" 
-        align="center" 
-        color="#FFD700" 
+        value="AR 測試"
+        position="0 0.7 0.01"
+        align="center"
+        color="#FFD700"
         width="1.5"
         shader="flat">
       </a-text>
+      
+      <!-- 
+        🔧 如果要加入更多元素，可以複製上面的標籤
+        
+        例如加入副標題：
+        <a-text 
+          value="歡迎參觀"
+          position="0 -0.4 0.01"
+          align="center"
+          color="#FFFFFF"
+          width="1.2">
+        </a-text>
+        
+        或加入圖片：
+        <a-image 
+          src="#myImage"
+          position="0.5 0 0"
+          width="0.5"
+          height="0.5">
+        </a-image>
+      -->
 
     </a-entity>
+    
+    <!-- 
+      🔧 如果有多個追蹤圖片，複製整個 a-entity：
+      
+      <a-entity mindar-image-target="targetIndex: 1">
+        <a-video src="#vid2" position="0 0 0" width="1" height="0.552"></a-video>
+        <a-text value="第二個景點" position="0 0.7 0.01" color="#00FF00" width="1.5"></a-text>
+      </a-entity>
+    -->
+
   </a-scene>
 
+  <!-- ========================================
+       📜 JavaScript 程式碼
+       ======================================== -->
   <script>
-    // === 設備偵測 ===
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const userAgent = navigator.userAgent.toLowerCase();
+    // ========================================
+    // 🔧 設定區：可修改的參數
+    // ========================================
     
-    // 偵測特定品牌
-    const deviceInfo = {
-      isAndroid: isAndroid,
-      isIOS: isIOS,
-      isSamsung: userAgent.includes('samsung'),
-      isXiaomi: userAgent.includes('xiaomi') || userAgent.includes('redmi'),
-      isOPPO: userAgent.includes('oppo'),
-      isHuawei: userAgent.includes('huawei'),
-      isVivo: userAgent.includes('vivo'),
-      screenWidth: window.innerWidth,
-      screenHeight: window.innerHeight,
-      aspectRatio: (window.innerWidth / window.innerHeight).toFixed(2),
-      pixelRatio: window.devicePixelRatio
-    };
-    
-    console.log('設備資訊:', deviceInfo);
-    
-    // === 預設調整參數 ===
-    let adjustments = {
-      position: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1 }
-    };
-    
-    // 根據設備類型預設調整
-    if (deviceInfo.isAndroid) {
-      const ratio = parseFloat(deviceInfo.aspectRatio);
+    const CONFIG = {
+      // 是否自動播放影片（建議保持 true）
+      autoPlay: true,
       
-      if (deviceInfo.isSamsung) {
-        // Samsung 設備
-        adjustments.position.y = -0.05;
-        adjustments.position.z = 0.02;
-        console.log('套用 Samsung 預設調整');
-      } else if (deviceInfo.isXiaomi) {
-        // Xiaomi 設備
-        adjustments.position.y = -0.03;
-        adjustments.scale = { x: 0.95, y: 0.95, z: 0.95 };
-        console.log('套用 Xiaomi 預設調整');
-      } else if (deviceInfo.isOPPO || deviceInfo.isVivo) {
-        // OPPO/Vivo 設備
-        adjustments.position.y = -0.04;
-        console.log('套用 OPPO/Vivo 預設調整');
-      } else if (ratio < 0.55) {
-        // 超長螢幕 (20:9, 21:9)
-        adjustments.position.y = -0.08;
-        adjustments.scale = { x: 0.9, y: 0.9, z: 0.9 };
-        console.log('套用長螢幕調整');
-      } else if (ratio < 0.6) {
-        // 長螢幕 (19.5:9, 19:9)
-        adjustments.position.y = -0.05;
-        adjustments.scale = { x: 0.95, y: 0.95, z: 0.95 };
-        console.log('套用中長螢幕調整');
-      } else {
-        // 標準螢幕 (18:9, 16:9)
-        adjustments.position.y = -0.02;
-        console.log('套用標準螢幕調整');
+      // 影片是否循環播放
+      loopVideo: true,
+      
+      // 是否靜音（必須為 true 才能自動播放）
+      muteVideo: true,
+      
+      // 播放失敗時的重試次數
+      maxRetries: 3,
+      
+      // 重試間隔（毫秒）
+      retryDelay: 500,
+      
+      // 是否顯示除錯訊息
+      debug: true
+    };
+    
+    // ========================================
+    // 輔助函數：等待元素載入
+    // ========================================
+    async function waitForElements() {
+      return new Promise((resolve) => {
+        const check = () => {
+          const scene = document.querySelector('a-scene');
+          if (scene && scene.hasLoaded) {
+            resolve();
+          } else {
+            setTimeout(check, 100);
+          }
+        };
+        check();
+      });
+    }
+    
+    // ========================================
+    // 輔助函數：帶重試的影片播放
+    // ========================================
+    async function playVideoWithRetry(video, retries = CONFIG.maxRetries) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          // 確保靜音
+          video.muted = CONFIG.muteVideo;
+          video.loop = CONFIG.loopVideo;
+          
+          // 嘗試播放
+          await video.play();
+          
+          if (CONFIG.debug) {
+            console.log(`✅ 影片播放成功 (嘗試 ${i + 1}/${retries})`);
+          }
+          
+          return true;
+        } catch (error) {
+          if (CONFIG.debug) {
+            console.warn(`播放失敗，嘗試 ${i + 1}/${retries}:`, error.message);
+          }
+          
+          // 如果是最後一次嘗試，返回失敗
+          if (i === retries - 1) {
+            console.error('❌ 影片播放最終失敗');
+            return false;
+          }
+          
+          // 等待後重試
+          await new Promise(resolve => setTimeout(resolve, CONFIG.retryDelay));
+        }
       }
     }
     
-    // 載入儲存的設定
-    const savedSettings = localStorage.getItem('ar-adjustments');
-    if (savedSettings) {
-      adjustments = JSON.parse(savedSettings);
-      console.log('載入儲存的設定:', adjustments);
-    }
-    
-    // === 初始化 AR ===
-    const scene = document.querySelector('a-scene');
-    
-    function initAR() {
-      console.log('初始化 AR...');
-      
+    // ========================================
+    // 主要函數：初始化 AR
+    // ========================================
+    async function initAR() {
+      const loading = document.getElementById('loading');
       const hint = document.getElementById('hint');
-      const target = document.querySelector('[mindar-image-target]');
-      const video = document.querySelector('#vid');
-      const arVideo = document.querySelector('#ar-video');
-      const info = document.getElementById('info');
       
-      if (!hint || !target || !video || !arVideo) {
-        console.error('元素未找到');
-        return;
-      }
-      
-      // 套用初始調整
-      applyAdjustments();
-      
-      // 更新資訊顯示
-      updateInfo();
-      
-      // AR 追蹤事件
-      target.addEventListener('targetFound', () => {
-        console.log('✅ 找到標記！');
-        hint.style.display = 'none';
+      try {
+        if (CONFIG.debug) {
+          console.log('🚀 開始初始化 AR...');
+        }
         
-        video.muted = true;
-        video.play().then(() => {
-          console.log('✅ 影片播放');
-        }).catch(err => {
-          console.error('❌ 播放失敗:', err);
+        // 等待場景載入
+        await waitForElements();
+        if (CONFIG.debug) {
+          console.log('✅ 場景已載入');
+        }
+        
+        // 獲取所有必要元素
+        const target = document.querySelector('[mindar-image-target]');
+        const video = document.querySelector('#vid');
+        const arVideo = document.querySelector('#ar-video');
+        
+        // 檢查元素是否存在
+        if (!target) {
+          throw new Error('找不到 AR target 元素');
+        }
+        if (!video) {
+          throw new Error('找不到 video 元素');
+        }
+        if (!arVideo) {
+          throw new Error('找不到 ar-video 元素');
+        }
+        
+        // 隱藏載入畫面
+        loading.classList.add('hidden');
+        
+        // ========================================
+        // 🎯 事件監聽：當找到追蹤圖片時
+        // ========================================
+        target.addEventListener('targetFound', async () => {
+          if (CONFIG.debug) {
+            console.log('✅ 找到追蹤標記！');
+          }
+          
+          // 隱藏提示
+          hint.style.display = 'none';
+          
+          // 如果設定為自動播放
+          if (CONFIG.autoPlay) {
+            const success = await playVideoWithRetry(video);
+            
+            // 如果播放失敗，顯示手動播放提示
+            if (!success) {
+              hint.innerHTML = '👆 點擊螢幕播放影片';
+              hint.style.display = 'block';
+              
+              // 等待使用者點擊
+              document.addEventListener('click', async function manualPlay() {
+                const clicked = await playVideoWithRetry(video, 1);
+                if (clicked) {
+                  hint.style.display = 'none';
+                  document.removeEventListener('click', manualPlay);
+                }
+              });
+            }
+          }
         });
-      });
-      
-      target.addEventListener('targetLost', () => {
-        console.log('❌ 標記遺失');
-        hint.style.display = 'block';
-        video.pause();
-      });
-      
-      console.log('✅ AR 初始化完成');
-    }
-    
-    // 場景載入
-    if (scene.hasLoaded) {
-      initAR();
-    } else {
-      scene.addEventListener('loaded', initAR);
-    }
-    
-    // === 調整函數 ===
-    function applyAdjustments() {
-      const arVideo = document.querySelector('#ar-video');
-      if (!arVideo) return;
-      
-      arVideo.setAttribute('position', adjustments.position);
-      arVideo.setAttribute('scale', adjustments.scale);
-      
-      console.log('套用調整:', adjustments);
-      updateInfo();
-    }
-    
-    function adjustPos(direction) {
-      const step = 0.03;
-      
-      switch(direction) {
-        case 'up':
-          adjustments.position.y += step;
-          break;
-        case 'down':
-          adjustments.position.y -= step;
-          break;
-        case 'left':
-          adjustments.position.x -= step;
-          break;
-        case 'right':
-          adjustments.position.x += step;
-          break;
-        case 'closer':
-          adjustments.position.z += step;
-          break;
-        case 'farther':
-          adjustments.position.z -= step;
-          break;
+        
+        // ========================================
+        // 🎯 事件監聽：當失去追蹤圖片時
+        // ========================================
+        target.addEventListener('targetLost', () => {
+          if (CONFIG.debug) {
+            console.log('❌ 失去追蹤標記');
+          }
+          
+          // 恢復提示
+          hint.innerHTML = '📷 對準導覽標誌';
+          hint.style.display = 'block';
+          
+          // 暫停影片
+          video.pause();
+        });
+        
+        if (CONFIG.debug) {
+          console.log('✅ AR 初始化完成');
+        }
+        
+      } catch (error) {
+        console.error('❌ AR 初始化失敗:', error);
+        
+        // 顯示錯誤訊息
+        loading.innerHTML = `
+          <div style="color: #ff6b6b;">
+            <strong>❌ 載入失敗</strong><br><br>
+            ${error.message}<br><br>
+            <button onclick="location.reload()" style="
+              background: white;
+              color: black;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 5px;
+              cursor: pointer;
+              font-size: 16px;
+            ">🔄 重新載入</button>
+          </div>
+        `;
       }
-      
-      applyAdjustments();
     }
     
-    function adjustScale(direction) {
-      const factor = direction === 'bigger' ? 1.05 : 0.95;
-      
-      adjustments.scale.x *= factor;
-      adjustments.scale.y *= factor;
-      adjustments.scale.z *= factor;
-      
-      applyAdjustments();
-    }
+    // ========================================
+    // 🚀 啟動 AR
+    // ========================================
+    initAR();
     
-    function resetPos() {
-      adjustments = {
-        position: { x: 0, y: 0, z: 0 },
-        scale: { x: 1, y: 1, z: 1 }
-      };
-      
-      applyAdjustments();
-      console.log('已重置');
-    }
-    
-    function saveSettings() {
-      localStorage.setItem('ar-adjustments', JSON.stringify(adjustments));
-      alert('設定已儲存！');
-      console.log('設定已儲存');
-    }
-    
-    function updateInfo() {
-      const info = document.getElementById('info');
-      if (!info) return;
-      
-      const pos = adjustments.position;
-      const scale = adjustments.scale;
-      
-      info.innerHTML = `
-        <strong>設備:</strong> ${deviceInfo.isAndroid ? 'Android' : deviceInfo.isIOS ? 'iOS' : '其他'}<br>
-        <strong>螢幕:</strong> ${deviceInfo.screenWidth}x${deviceInfo.screenHeight}<br>
-        <strong>比例:</strong> ${deviceInfo.aspectRatio}<br>
-        <strong>位置:</strong><br>
-        X: ${pos.x.toFixed(2)}<br>
-        Y: ${pos.y.toFixed(2)}<br>
-        Z: ${pos.z.toFixed(2)}<br>
-        <strong>大小:</strong> ${scale.x.toFixed(2)}
-      `;
-    }
-    
-    // === UI 控制 ===
-    document.getElementById('toggle-btn').addEventListener('click', () => {
-      document.getElementById('controls').classList.toggle('visible');
+    // ========================================
+    // 全域錯誤處理
+    // ========================================
+    window.addEventListener('error', (event) => {
+      console.error('❌ 全域錯誤:', event.error);
     });
     
-    // 錯誤處理
-    window.addEventListener('error', (e) => {
-      console.error('錯誤:', e);
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('❌ 未處理的 Promise 錯誤:', event.reason);
     });
   </script>
 
-</body>
+  <!-- ========================================
+       📚 使用說明
+       
+       🔧 如何更換追蹤圖片（掃描的圖片）：
+       
+       1. 準備你的圖片（建議 1024x1024 以上，高對比度）
+       
+       2. 編譯圖片為 .mind 檔案：
+          方法 A：線上工具
+          https://hiukim.github.io/mind-ar-js-doc/tools/compile
+          
+          方法 B：CLI 工具
+          npm install -g mind-ar-cli
+          mind-ar-cli compile --input your-image.jpg --output target.mind
+       
+       3. 上傳 .mind 檔案到你的伺服器或 GitHub
+       
+       4. 修改 <a-scene> 的 imageTargetSrc：
+          mindar-image="imageTargetSrc: ./assets/targets/your-target.mind"
+       
+       ========================================
+       
+       🔧 如何更換播放的影片：
+       
+       1. 準備影片檔案：
+          - 格式：MP4 (H.264 編碼)
+          - 解析度：1280x720 或 1920x1080
+          - 檔案大小：建議 < 20MB
+          - 長度：1-3 分鐘為佳
+       
+       2. 上傳影片到你的伺服器或 GitHub
+       
+       3. 修改 <a-assets> 中的 video src：
+          <video id="vid" src="./videos/your-video.mp4" ...>
+       
+       ========================================
+       
+       🔧 如何加入多個景點：
+       
+       1. 編譯多張追蹤圖片：
+          mind-ar-cli compile --input img1.jpg,img2.jpg --output targets.mind
+       
+       2. 修改 imageTargetSrc 指向新的 .mind 檔案
+       
+       3. 在 <a-scene> 中加入多個 <a-entity>：
+       
+          <a-entity mindar-image-target="targetIndex: 0">
+            <!-- 第一個景點的內容 -->
+          </a-entity>
+          
+          <a-entity mindar-image-target="targetIndex: 1">
+            <!-- 第二個景點的內容 -->
+          </a-entity>
+       
+       ========================================
+       
+       🎨 常用修改範例：
+       
+       1. 改變文字顏色：
+          color="#FF0000"  (紅色)
+          color="#00FF00"  (綠色)
+          color="#0000FF"  (藍色)
+          color="#FFFFFF"  (白色)
+       
+       2. 調整影片位置：
+          position="0 0.2 0"    (往上移)
+          position="0 -0.2 0"   (往下移)
+          position="0.3 0 0"    (往右移)
+          position="-0.3 0 0"   (往左移)
+       
+       3. 改變影片大小：
+          width="1.5" height="0.85"  (放大)
+          width="0.7" height="0.4"   (縮小)
+       
+       4. 旋轉影片：
+          rotation="-90 0 0"  (平躺)
+          rotation="0 45 0"   (旋轉 45 度)
+       
+       ======================================== --></body>
 </html>
