@@ -59,10 +59,127 @@
     const hint = document.getElementById('hint');
     const target = document.querySelector('[mindar-image-target]');
     const video = document.querySelector('#vid');
+    // 偵測特定品牌
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isSamsung = userAgent.includes('samsung');
+    const isXiaomi = userAgent.includes('xiaomi') || userAgent.includes('redmi');
+    const isOPPO = userAgent.includes('oppo');
+    const isHuawei = userAgent.includes('huawei');
     
     target.addEventListener('targetFound', () => {
       console.log('找到標記！');
       hint.style.display = 'none';
+      // 根據品牌調整
+  AFRAME.registerComponent('brand-specific-fix', {
+    init: function() {
+    const currentPos = this.el.getAttribute('position');
+    let adjustment = { x: 0, y: 0, z: 0 };
+    
+    if (isSamsung) {
+      adjustment = { x: 0, y: -0.05, z: 0 };
+      console.log('套用 Samsung 修正');
+    } else if (isXiaomi) {
+      adjustment = { x: 0, y: 0, z: 0.02 };
+      console.log('套用 Xiaomi 修正');
+    } else if (isOPPO) {
+      adjustment = { x: 0, y: -0.03, z: 0 };
+      console.log('套用 OPPO 修正');
+    }
+    
+    this.el.setAttribute('position', {
+      x: currentPos.x + adjustment.x,
+      y: currentPos.y + adjustment.y,
+      z: currentPos.z + adjustment.z
+    });
+  }
+});
+       // === Android 設備偵測 ===
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    console.log('設備類型:', isAndroid ? 'Android' : isIOS ? 'iOS' : '其他');
+
+    // === Android 位置修正組件 ===
+    AFRAME.registerComponent('android-position-fix', {
+      init: function() {
+        if (isAndroid) {
+          // Android 設備的位置微調
+          const currentPos = this.el.getAttribute('position');
+          
+          // 根據螢幕比例調整
+          const aspectRatio = window.innerWidth / window.innerHeight;
+          
+          if (aspectRatio < 0.6) {
+            // 長螢幕（19.5:9, 20:9）
+            console.log('偵測到長螢幕 Android 設備');
+            this.el.setAttribute('position', {
+              x: currentPos.x,
+              y: currentPos.y * 0.9,  // 稍微往下
+              z: currentPos.z
+            });
+          } else if (aspectRatio < 0.65) {
+            // 中長螢幕（18:9）
+            console.log('偵測到中長螢幕 Android 設備');
+            this.el.setAttribute('position', {
+              x: currentPos.x,
+              y: currentPos.y * 0.95,
+              z: currentPos.z
+            });
+          }
+          
+          // 稍微縮小以避免超出邊界
+          const currentScale = this.el.getAttribute('scale') || {x: 1, y: 1, z: 1};
+          this.el.setAttribute('scale', {
+            x: currentScale.x * 0.95,
+            y: currentScale.y * 0.95,
+            z: currentScale.z * 0.95
+          });
+        }
+      }
+    });
+
+    // === Android 相機修正 ===
+    AFRAME.registerComponent('android-fix', {
+      init: function() {
+        if (isAndroid) {
+          console.log('套用 Android 相機修正');
+          
+          // 等待場景載入
+          this.el.sceneEl.addEventListener('renderstart', () => {
+            const camera = this.el.components.camera.camera;
+            
+            // 調整視野以適應 Android 設備
+            camera.fov = 70; // 預設通常是 60-80
+            camera.updateProjectionMatrix();
+            
+            console.log('相機 FOV 調整為:', camera.fov);
+          });
+        }
+      }
+    });
+
+    // === 標記追蹤事件 ===
+    const hint = document.getElementById('hint');
+    const target = document.querySelector('[mindar-image-target]');
+    const video = document.querySelector('#vid');
+    
+    target.addEventListener('targetFound', () => {
+      console.log('找到標記！');
+      hint.style.display = 'none';
+      video.muted = true;
+      video.play();
+    });
+    
+    target.addEventListener('targetLost', () => {
+      console.log('標記遺失');
+      hint.style.display = 'block';
+      video.pause();
+    });
+
+    // === 除錯資訊 ===
+    console.log('螢幕尺寸:', window.innerWidth, 'x', window.innerHeight);
+    console.log('螢幕比例:', (window.innerWidth / window.innerHeight).toFixed(2));
+    console.log('Device Pixel Ratio:', window.devicePixelRatio);
       
       // 強制播放影片
       video.muted = true; // 確保靜音
