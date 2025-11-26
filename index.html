@@ -321,6 +321,99 @@
       adjustments = JSON.parse(savedSettings);
       console.log('載入儲存的設定:', adjustments);
     }
+       // === 調整函數 ===
+    function applyAdjustments() {
+      const arVideo = document.querySelector('#ar-video');
+      if (!arVideo) return;
+      
+      arVideo.setAttribute('position', adjustments.position);
+      arVideo.setAttribute('scale', adjustments.scale);
+      
+      console.log('套用調整:', adjustments);
+      updateInfo();
+    }
+    
+    function adjustPos(direction) {
+      const step = 0.03;
+      
+      switch(direction) {
+        case 'up':
+          adjustments.position.y += step;
+          break;
+        case 'down':
+          adjustments.position.y -= step;
+          break;
+        case 'left':
+          adjustments.position.x -= step;
+          break;
+        case 'right':
+          adjustments.position.x += step;
+          break;
+        case 'closer':
+          adjustments.position.z += step;
+          break;
+        case 'farther':
+          adjustments.position.z -= step;
+          break;
+      }
+      
+      applyAdjustments();
+    }
+    
+    function adjustScale(direction) {
+      const factor = direction === 'bigger' ? 1.05 : 0.95;
+      
+      adjustments.scale.x *= factor;
+      adjustments.scale.y *= factor;
+      adjustments.scale.z *= factor;
+      
+      applyAdjustments();
+    }
+    
+    function resetPos() {
+      adjustments = {
+        position: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      };
+      
+      applyAdjustments();
+      console.log('已重置');
+    }
+    
+    function saveSettings() {
+      localStorage.setItem('ar-adjustments', JSON.stringify(adjustments));
+      alert('設定已儲存！');
+      console.log('設定已儲存');
+    }
+    
+    function updateInfo() {
+      const info = document.getElementById('info');
+      if (!info) return;
+      
+      const pos = adjustments.position;
+      const scale = adjustments.scale;
+      
+      info.innerHTML = `
+        <strong>設備:</strong> ${deviceInfo.isAndroid ? 'Android' : deviceInfo.isIOS ? 'iOS' : '其他'}<br>
+        <strong>螢幕:</strong> ${deviceInfo.screenWidth}x${deviceInfo.screenHeight}<br>
+        <strong>比例:</strong> ${deviceInfo.aspectRatio}<br>
+        <strong>位置:</strong><br>
+        X: ${pos.x.toFixed(2)}<br>
+        Y: ${pos.y.toFixed(2)}<br>
+        Z: ${pos.z.toFixed(2)}<br>
+        <strong>大小:</strong> ${scale.x.toFixed(2)}
+      `;
+    }
+    
+    // === UI 控制 ===
+    document.getElementById('toggle-btn').addEventListener('click', () => {
+      document.getElementById('controls').classList.toggle('visible');
+    });
+    
+    // 錯誤處理
+    window.addEventListener('error', (e) => {
+      console.error('錯誤:', e);
+    });
     // ========================================
     // 輔助函數：等待元素載入
     // ========================================
