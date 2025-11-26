@@ -252,7 +252,75 @@
       // 是否顯示除錯訊息
       debug: true
     };
+    // === 設備偵測 ===
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const userAgent = navigator.userAgent.toLowerCase();
     
+    // 偵測特定品牌
+    const deviceInfo = {
+      isAndroid: isAndroid,
+      isIOS: isIOS,
+      isSamsung: userAgent.includes('samsung'),
+      isXiaomi: userAgent.includes('xiaomi') || userAgent.includes('redmi'),
+      isOPPO: userAgent.includes('oppo'),
+      isHuawei: userAgent.includes('huawei'),
+      isVivo: userAgent.includes('vivo'),
+      screenWidth: window.innerWidth,
+      screenHeight: window.innerHeight,
+      aspectRatio: (window.innerWidth / window.innerHeight).toFixed(2),
+      pixelRatio: window.devicePixelRatio
+    };
+    
+    console.log('設備資訊:', deviceInfo);
+    
+    // === 預設調整參數 ===
+    let adjustments = {
+      position: { x: 0, y: 0, z: 0 },
+      scale: { x: 1, y: 1, z: 1 }
+    };
+    
+    // 根據設備類型預設調整
+    if (deviceInfo.isAndroid) {
+      const ratio = parseFloat(deviceInfo.aspectRatio);
+      
+      if (deviceInfo.isSamsung) {
+        // Samsung 設備
+        adjustments.position.y = -0.05;
+        adjustments.position.z = 0.02;
+        console.log('套用 Samsung 預設調整');
+      } else if (deviceInfo.isXiaomi) {
+        // Xiaomi 設備
+        adjustments.position.y = -0.03;
+        adjustments.scale = { x: 0.95, y: 0.95, z: 0.95 };
+        console.log('套用 Xiaomi 預設調整');
+      } else if (deviceInfo.isOPPO || deviceInfo.isVivo) {
+        // OPPO/Vivo 設備
+        adjustments.position.y = -0.04;
+        console.log('套用 OPPO/Vivo 預設調整');
+      } else if (ratio < 0.55) {
+        // 超長螢幕 (20:9, 21:9)
+        adjustments.position.y = -0.08;
+        adjustments.scale = { x: 0.9, y: 0.9, z: 0.9 };
+        console.log('套用長螢幕調整');
+      } else if (ratio < 0.6) {
+        // 長螢幕 (19.5:9, 19:9)
+        adjustments.position.y = -0.05;
+        adjustments.scale = { x: 0.95, y: 0.95, z: 0.95 };
+        console.log('套用中長螢幕調整');
+      } else {
+        // 標準螢幕 (18:9, 16:9)
+        adjustments.position.y = -0.02;
+        console.log('套用標準螢幕調整');
+      }
+    }
+    
+    // 載入儲存的設定
+    const savedSettings = localStorage.getItem('ar-adjustments');
+    if (savedSettings) {
+      adjustments = JSON.parse(savedSettings);
+      console.log('載入儲存的設定:', adjustments);
+    }
     // ========================================
     // 輔助函數：等待元素載入
     // ========================================
